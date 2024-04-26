@@ -1,0 +1,1 @@
+-- install mssql server and ssms software
