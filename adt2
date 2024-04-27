@@ -1,0 +1,101 @@
+import psycopg2
+from io import BytesIO
+from PIL import Image
+
+class StudentManager:
+    def _init_(self):
+        self.conn = psycopg2.connect(dbname="postgres", user="postgres", password="1234", host="localhost", port="5432")
+        self.create_table()
+
+    def create_table(self):
+        with self.conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS students (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255),
+                    age INTEGER,
+                    grade VARCHAR(10),
+                    image BYTEA
+                )
+            """)
+            self.conn.commit()
+
+    def add_student(self, name, age, grade, image_path):
+        with self.conn.cursor() as cursor:
+            with open(image_path, 'rb') as f:
+                image_data = f.read()
+            cursor.execute("INSERT INTO students (name, age, grade, image) VALUES (%s, %s, %s, %s)", (name, age, grade, image_data))
+            self.conn.commit()
+
+    def get_students(self):
+        with self.conn.cursor() as cursor:
+            cursor.execute("SELECT id, name, age, grade, image FROM students")
+            return cursor.fetchall()
+
+    def search_students_by_name(self, query):
+        with self.conn.cursor() as cursor:
+            cursor.execute("SELECT id, name, age, grade, image FROM students WHERE name ILIKE %s", ('%' + query + '%',))
+            return cursor.fetchall()
+
+    def display_image(self, student_id):
+        with self.conn.cursor() as cursor:
+            cursor.execute("SELECT image FROM students WHERE id = %s", (student_id,))
+            image_data = cursor.fetchone()[0]
+            img = Image.open(BytesIO(image_data))
+            img.show()
+
+    def delete_student(self, student_id):
+        with self.conn.cursor() as cursor:
+            cursor.execute("DELETE FROM students WHERE id = %s", (student_id,))
+            self.conn.commit()
+
+if _name_ == "_main_":
+    student_manager = StudentManager()
+    student_manager.add_student("suraj mali", 20, "A", "suraj.jpeg")
+    student_manager.add_student("deepak mali", 20, "A", "deepak.jpeg")
+    student_manager.add_student("siddhesh kumbhar", 20, "A", "siddhesh.jpeg")
+    student_manager.add_student("ashish sutar", 20, "A", "ashish.jpeg")
+    
+    search_query = "mali"
+    search_results = student_manager.search_students_by_name(search_query)
+    print(f"\nSearch results for '{search_query}':")
+    for student in search_results:
+        print(student)
+
+    student_manager.display_image(1)
+
+    students = student_manager.get_students()
+    print("\nAll Students:")
+    for student in students:
+        print(student)
+
+    student_manager.delete_student(1)
+
+    students = student_manager.get_students()
+    print("\nStudents after deletion:")
+    for student in students:
+        print(student)
+
+    student_manager.conn.close()
+
+
+
+
+
+
+
+
+CREATE TABLE IF NOT EXISTS students (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255),
+                    age INTEGER,
+                    grade VARCHAR(10),
+                    image BYTEA
+                )
+select * from students;      
+drop table students;
+
+
+
+
+
